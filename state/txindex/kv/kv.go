@@ -262,10 +262,17 @@ func (txi *TxIndex) Search(ctx context.Context, q *query.Query) ([]*abci.TxResul
 			// Ignore any remaining conditions if the first condition resulted
 			// in no matches (assuming implicit AND operand).
 			if len(filteredHashes) == 0 {
-				break
+				// try matching with escape quote
+				filteredHashes = txi.match(ctx, c, startKeyForConditionDoubleQuote(c, height), filteredHashes, true)
+				if len(filteredHashes) == 0 {
+					break
+				}
 			}
 		} else {
 			filteredHashes = txi.match(ctx, c, startKeyForCondition(c, height), filteredHashes, false)
+			if len(filteredHashes) == 0 {
+				filteredHashes = txi.match(ctx, c, startKeyForConditionDoubleQuote(c, height), filteredHashes, false)
+			}
 		}
 	}
 
@@ -570,6 +577,14 @@ func startKeyForCondition(c query.Condition, height int64) []byte {
 		return startKey(c.CompositeKey, c.Operand, height)
 	}
 	return startKey(c.CompositeKey, c.Operand)
+}
+
+func startKeyForConditionDoubleQuote(c query.Condition, height int64) []byte {
+	operand := fmt.Sprintf(`"%s"`, c.Operand)
+	if height > 0 {
+		return startKey(c.CompositeKey, operand, height)
+	}
+	return startKey(c.CompositeKey, operand)
 }
 
 func startKey(fields ...interface{}) []byte {

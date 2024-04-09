@@ -72,6 +72,8 @@ func TestTxSearch(t *testing.T) {
 		{Type: "account", Attributes: []abci.EventAttribute{{Key: []byte("number"), Value: []byte("1"), Index: true}}},
 		{Type: "account", Attributes: []abci.EventAttribute{{Key: []byte("owner"), Value: []byte("Ivan"), Index: true}}},
 		{Type: "", Attributes: []abci.EventAttribute{{Key: []byte("not_allowed"), Value: []byte("Vlad"), Index: true}}},
+		{Type: "gravity.v1.EventSendToCosmosExecutedIbcAutoForward", Attributes: []abci.EventAttribute{{Key: []byte("nonce_value"), Value: []byte("\"64263\""), Index: true}}},
+		{Type: "gravity.v1.EventSendToCosmosExecutedIbcAutoForward", Attributes: []abci.EventAttribute{{Key: []byte("nonce"), Value: []byte("64263"), Index: true}}},
 	})
 	hash := types.Tx(txResult.Tx).Hash()
 
@@ -119,6 +121,8 @@ func TestTxSearch(t *testing.T) {
 		{"account.number EXISTS", 1},
 		// search using EXISTS for non existing key
 		{"account.date EXISTS", 0},
+		{"gravity.v1.EventSendToCosmosExecutedIbcAutoForward.nonce = '64263'", 1},
+		{"gravity.v1.EventSendToCosmosExecutedIbcAutoForward.nonce_value = '64263'", 1},
 	}
 
 	ctx := context.Background()
@@ -126,7 +130,9 @@ func TestTxSearch(t *testing.T) {
 	for _, tc := range testCases {
 		tc := tc
 		t.Run(tc.q, func(t *testing.T) {
-			results, err := indexer.Search(ctx, query.MustParse(tc.q))
+			q, err := query.New(tc.q)
+			assert.NoError(t, err)
+			results, err := indexer.Search(ctx, q)
 			assert.NoError(t, err)
 
 			assert.Len(t, results, tc.resultsLength)
