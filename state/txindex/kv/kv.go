@@ -254,25 +254,24 @@ func (txi *TxIndex) Search(ctx context.Context, q *query.Query) ([]*abci.TxResul
 		if intInSlice(i, skipIndexes) {
 			continue
 		}
+		compositeKeySplit := strings.Split(c.CompositeKey, ".")
+		filterKey := startKeyForCondition(c, height)
+		// if compositeKeySplit > 2 it means there are more than two '.' in the composite key -> it is a typed event -> we need to add double quote
+		if len(compositeKeySplit) > 2 {
+			filterKey = startKeyForConditionDoubleQuote(c, height)
+		}
 
 		if !hashesInitialized {
-			filteredHashes = txi.match(ctx, c, startKeyForCondition(c, height), filteredHashes, true)
+			filteredHashes = txi.match(ctx, c, filterKey, filteredHashes, true)
 			hashesInitialized = true
 
 			// Ignore any remaining conditions if the first condition resulted
 			// in no matches (assuming implicit AND operand).
 			if len(filteredHashes) == 0 {
-				// try matching with escape quote
-				filteredHashes = txi.match(ctx, c, startKeyForConditionDoubleQuote(c, height), filteredHashes, true)
-				if len(filteredHashes) == 0 {
-					break
-				}
+				break
 			}
 		} else {
-			filteredHashes = txi.match(ctx, c, startKeyForCondition(c, height), filteredHashes, false)
-			if len(filteredHashes) == 0 {
-				filteredHashes = txi.match(ctx, c, startKeyForConditionDoubleQuote(c, height), filteredHashes, false)
-			}
+			filteredHashes = txi.match(ctx, c, filterKey, filteredHashes, false)
 		}
 	}
 
@@ -413,6 +412,7 @@ func (txi *TxIndex) match(
 		panic("other operators should be handled already")
 	}
 
+	fmt.Println("tmp hashes: ", tmpHashes, firstRun)
 	if len(tmpHashes) == 0 || firstRun {
 		// Either:
 		//

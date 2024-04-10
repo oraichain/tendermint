@@ -68,12 +68,13 @@ func TestTxIndex(t *testing.T) {
 func TestTxSearch(t *testing.T) {
 	indexer := NewTxIndex(db.NewMemDB())
 
+	// Create a json.RawMessage from the marshaled data
 	txResult := txResultWithEvents([]abci.Event{
 		{Type: "account", Attributes: []abci.EventAttribute{{Key: []byte("number"), Value: []byte("1"), Index: true}}},
+		{Type: "balance", Attributes: []abci.EventAttribute{{Key: []byte("native"), Value: []byte("1"), Index: true}}},
 		{Type: "account", Attributes: []abci.EventAttribute{{Key: []byte("owner"), Value: []byte("Ivan"), Index: true}}},
 		{Type: "", Attributes: []abci.EventAttribute{{Key: []byte("not_allowed"), Value: []byte("Vlad"), Index: true}}},
-		{Type: "gravity.v1.EventSendToCosmosExecutedIbcAutoForward", Attributes: []abci.EventAttribute{{Key: []byte("nonce_value"), Value: []byte("\"64263\""), Index: true}}},
-		{Type: "gravity.v1.EventSendToCosmosExecutedIbcAutoForward", Attributes: []abci.EventAttribute{{Key: []byte("nonce"), Value: []byte("64263"), Index: true}}},
+		{Type: "gravity.v1.EventSendToCosmosExecutedIbcAutoForward", Attributes: []abci.EventAttribute{{Key: []byte("nonce"), Value: []byte("\"64263\""), Index: true}}},
 	})
 	hash := types.Tx(txResult.Tx).Hash()
 
@@ -122,7 +123,9 @@ func TestTxSearch(t *testing.T) {
 		// search using EXISTS for non existing key
 		{"account.date EXISTS", 0},
 		{"gravity.v1.EventSendToCosmosExecutedIbcAutoForward.nonce = '64263'", 1},
-		{"gravity.v1.EventSendToCosmosExecutedIbcAutoForward.nonce_value = '64263'", 1},
+		{"account.owner = 'Ivan' AND gravity.v1.EventSendToCosmosExecutedIbcAutoForward.nonce = '64263'", 1},
+		{"gravity.v1.EventSendToCosmosExecutedIbcAutoForward.nonce = '64263' AND account.owner = 'Ivan'", 1},
+		{"account.owner = 'Ivan' AND gravity.v1.EventSendToCosmosExecutedIbcAutoForward.nonce = '64263' AND account.number = 1", 1},
 	}
 
 	ctx := context.Background()
