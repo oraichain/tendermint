@@ -254,11 +254,13 @@ func (txi *TxIndex) Search(ctx context.Context, q *query.Query) ([]*abci.TxResul
 		if intInSlice(i, skipIndexes) {
 			continue
 		}
-		compositeKeySplit := strings.Split(c.CompositeKey, ".")
-		filterKey := startKeyForCondition(c, height)
+		var filterKey []byte
+		compositeKeySplit := strings.SplitN(c.CompositeKey, ".", 3)
 		// if compositeKeySplit > 2 it means there are more than two '.' in the composite key -> it is a typed event -> we need to add double quote
-		if len(compositeKeySplit) > 2 {
+		if len(compositeKeySplit) == 3 {
 			filterKey = startKeyForConditionDoubleQuote(c, height)
+		} else {
+			filterKey = startKeyForCondition(c, height)
 		}
 
 		if !hashesInitialized {
