@@ -412,7 +412,6 @@ func (txi *TxIndex) match(
 		panic("other operators should be handled already")
 	}
 
-	fmt.Println("tmp hashes: ", tmpHashes, firstRun)
 	if len(tmpHashes) == 0 || firstRun {
 		// Either:
 		//
